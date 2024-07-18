@@ -1044,7 +1044,7 @@ function mpld3_Axes(fig, props) {
   this.height = bbox[3] * this.fig.height;
   this.isZoomEnabled = null;
   this.zoom = null;
-  this.lastTransform = d3.zoomIdentity;
+  this.lastTransform = d3.xyzoomIdentity;
   this.isBoxzoomEnabled = null;
   this.isLinkedBrushEnabled = null;
   this.isCurrentLinkedBrushTarget = false;
@@ -1131,7 +1131,7 @@ mpld3_Axes.prototype.draw = function() {
 
 mpld3_Axes.prototype.bindZoom = function() {
   if (!this.zoom) {
-    this.zoom = d3.zoom();
+    this.zoom = d3.xyzoom();
     this.zoom.on("zoom", this.zoomed.bind(this));
     this.axes.call(this.zoom);
   }
@@ -1161,10 +1161,10 @@ mpld3_Axes.prototype.unbindBrush = function() {
 
 mpld3_Axes.prototype.reset = function() {
   if (this.zoom) {
-    this.doZoom(false, d3.zoomIdentity, 750);
+    this.doZoom(false, d3.xyzoomIdentity, 750);
   } else {
     this.bindZoom();
-    this.doZoom(false, d3.zoomIdentity, 750, function() {
+    this.doZoom(false, d3.xyzoomIdentity, 750, function() {
       if (this.isSomeTypeOfZoomEnabled) {
         return;
       }
@@ -1242,10 +1242,12 @@ mpld3_Axes.prototype.doZoom = function(propagate, transform, duration, onTransit
   if (propagate) {
     this.lastTransform = transform;
     this.sharex.forEach(function(sharedAxes) {
-      sharedAxes.doZoom(false, transform, duration);
+      var t = d3.xyzoomIdentity.translate(transform.x, 0).scale(transform.kx, 1);
+      sharedAxes.doZoom(false, t, duration);
     });
     this.sharey.forEach(function(sharedAxes) {
-      sharedAxes.doZoom(false, transform, duration);
+      var t = d3.xyzoomIdentity.translate(0, transform.y).scale(1, transform.ky);
+      sharedAxes.doZoom(false, t, duration);
     });
   } else {
     this.lastTransform = transform;
@@ -1280,10 +1282,11 @@ mpld3_Axes.prototype.doBoxzoom = function(selection) {
   var dy = sel[1][1] - sel[0][1];
   var cx = (sel[0][0] + sel[1][0]) / 2;
   var cy = (sel[0][1] + sel[1][1]) / 2;
-  var scale = dx > dy ? this.width / dx : this.height / dy;
-  var transX = this.width / 2 - scale * cx;
-  var transY = this.height / 2 - scale * cy;
-  var transform = d3.zoomIdentity.translate(transX, transY).scale(scale);
+  var sx = this.width / dx;
+  var sy = this.height / dy;
+  var transX = this.width / 2 - sx * cx;
+  var transY = this.height / 2 - sy * cy;
+  var transform = d3.xyzoomIdentity.translate(transX, transY).scale(sx, sy);
   this.doZoom(true, transform, 750);
   this.resetBrush();
 };
