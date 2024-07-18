@@ -374,13 +374,15 @@ mpld3_Axes.prototype.doZoom = function(
         this.lastTransform = transform;
 
         this.sharex.forEach(function(sharedAxes) {
-            sharedAxes.doZoom(false, transform, duration);
+            var t = d3.xyzoomIdentity.translate(transform.x, 0).scale(transform.kx, 1);
+            sharedAxes.doZoom(false, t, duration);
             // var xTransform = sharedAxes.lastTransform.translate(xDiff, 0).scale(kDiffFactor);
             // sharedAxes.doZoom(false, xTransform, duration);
         });
 
         this.sharey.forEach(function(sharedAxes) {
-            sharedAxes.doZoom(false, transform, duration);
+            var t = d3.xyzoomIdentity.translate(0, transform.y).scale(1, transform.ky);
+            sharedAxes.doZoom(false, t, duration);
             // var yTransform = sharedAxes.lastTransform.translate(0, yDiff).scale(kDiffFactor);
             // sharedAxes.doZoom(false, yTransform, duration);
         });
@@ -422,10 +424,12 @@ mpld3_Axes.prototype.doBoxzoom = function(selection) {
     var cx = (sel[0][0] + sel[1][0]) / 2;
     var cy = (sel[0][1] + sel[1][1]) / 2;
 
-    var scale = (dx > dy) ? this.width / dx : this.height / dy;
-    var transX = this.width / 2 - scale * cx;
-    var transY = this.height / 2 - scale * cy;
-    var transform = d3.xyzoomIdentity.translate(transX, transY).scale(scale, scale);
+
+    var sx = this.width / dx;
+    var sy = this.height / dy;
+    var transX = this.width / 2 - sx * cx;
+    var transY = this.height / 2 - sy * cy;
+    var transform = d3.xyzoomIdentity.translate(transX, transY).scale(sx, sy);
 
     this.doZoom(true, transform, 750);
     this.resetBrush();
