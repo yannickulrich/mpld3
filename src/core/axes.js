@@ -55,7 +55,7 @@ function mpld3_Axes(fig, props) {
 
     this.isZoomEnabled = null;
     this.zoom = null;
-    this.lastTransform = d3.zoomIdentity;
+    this.lastTransform = d3.xyzoomIdentity;
 
     this.isBoxzoomEnabled = null;
 
@@ -235,7 +235,7 @@ mpld3_Axes.prototype.draw = function() {
 
 mpld3_Axes.prototype.bindZoom = function() {
     if (!this.zoom) {
-        this.zoom = d3.zoom();
+        this.zoom = d3.xyzoom();
         this.zoom.on('zoom', this.zoomed.bind(this));
         this.axes.call(this.zoom);
     }
@@ -268,10 +268,10 @@ mpld3_Axes.prototype.unbindBrush = function() {
 
 mpld3_Axes.prototype.reset = function() {
     if (this.zoom) {
-        this.doZoom(false, d3.zoomIdentity, 750);
+        this.doZoom(false, d3.xyzoomIdentity, 750);
     } else {
         this.bindZoom();
-        this.doZoom(false, d3.zoomIdentity, 750, function() {
+        this.doZoom(false, d3.xyzoomIdentity, 750, function() {
             /*
             (@vladh)
 
@@ -425,7 +425,7 @@ mpld3_Axes.prototype.doBoxzoom = function(selection) {
     var scale = (dx > dy) ? this.width / dx : this.height / dy;
     var transX = this.width / 2 - scale * cx;
     var transY = this.height / 2 - scale * cy;
-    var transform = d3.zoomIdentity.translate(transX, transY).scale(scale);
+    var transform = d3.xyzoomIdentity.translate(transX, transY).scale(scale, scale);
 
     this.doZoom(true, transform, 750);
     this.resetBrush();
