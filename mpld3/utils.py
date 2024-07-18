@@ -59,7 +59,7 @@ def deprecated(func, old_name, new_name):
     return new_func
 
 
-def write_ipynb_local_js(location=None, d3_src=None, mpld3_src=None):
+def write_ipynb_local_js(location=None, d3_src=None, d3xyzoom_src=None, mpld3_src=None):
     """
     Write the mpld3 and d3 javascript libraries to the given file location.
 
@@ -76,6 +76,9 @@ def write_ipynb_local_js(location=None, d3_src=None, mpld3_src=None):
     d3_src : string (optional)
         the source location of the d3 library. If not specified, the standard
         path in mpld3.urls.D3_LOCAL will be used.
+    d3xyzoom_src : string (optional)
+        the source location of the d3xyzoom library. If not specified, the standard
+        path in mpld3.urls.D3XYZOOM_LOCAL will be used.
     mpld3_src : string (optional)
         the source location of the mpld3 library. If not specified, the
         standard path in mpld3.urls.MPLD3_LOCAL will be used.
@@ -98,14 +101,19 @@ def write_ipynb_local_js(location=None, d3_src=None, mpld3_src=None):
 
     if d3_src is None:
         d3_src = urls.D3_LOCAL
+    if d3xyzoom_src is None:
+        d3_src = urls.D3XYZOOM_LOCAL
     if mpld3_src is None:
         mpld3_src = urls.MPLD3_LOCAL
 
     d3js = os.path.basename(d3_src)
+    d3xyzoomjs = os.path.basename(d3xyzoom_src)
     mpld3js = os.path.basename(mpld3_src)
 
     if not os.path.exists(d3_src):
-        raise ValueError("d3 src not found at '{0}'".format(d3_src))
+        raise valueerror("d3 src not found at '{0}'".format(d3_src))
+    if not os.path.exists(d3xyzoom_src):
+        raise valueerror("d3xyzoom src not found at '{0}'".format(d3xyzoom_src))
     if not os.path.exists(mpld3_src):
         raise ValueError("mpld3 src not found at '{0}'".format(mpld3_src))
 
@@ -124,7 +132,7 @@ def write_ipynb_local_js(location=None, d3_src=None, mpld3_src=None):
                 install_nbextension(extensions)
 
         try:
-            _install_nbextension([d3_src, mpld3_src])
+            _install_nbextension([d3_src, d3xyzoom_src, mpld3_src])
         except IOError:
             # files may be read only. We'll try deleting them and re-installing
             from IPython.utils.path import get_ipython_dir
@@ -142,9 +150,10 @@ def write_ipynb_local_js(location=None, d3_src=None, mpld3_src=None):
         prefix = '/files/'
 
         d3_dest = os.path.join(location, d3js)
+        d3xyzoom_dest = os.path.join(location, d3xyzoomjs)
         mpld3_dest = os.path.join(location, mpld3js)
 
-        for src, dest in [(d3_src, d3_dest), (mpld3_src, mpld3_dest)]:
+        for src, dest in [(d3_src, d3_dest), (d3xyzoom_src, d3xyzoom_dest), (mpld3_src, mpld3_dest)]:
             try:
                 shutil.copyfile(src, dest)
             except IOError:
@@ -154,7 +163,7 @@ def write_ipynb_local_js(location=None, d3_src=None, mpld3_src=None):
                 shutil.copyfile(src, dest)
 
 
-    return prefix + d3js, prefix + mpld3js
+    return prefix + d3js, prefix + d3xyzoomjs, prefix + mpld3js
 
 
 def load_test_dataset(dataset):

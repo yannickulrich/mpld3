@@ -24,6 +24,7 @@ __all__ = ["fig_to_html", "fig_to_dict", "fig_to_d3",
 SIMPLE_HTML = jinja2.Template("""
 {% if include_libraries %}
 <script type="text/javascript" src="{{ d3_url }}"></script>
+<script type="text/javascript" src="{{ d3xyzoom_url }}"></script>
 <script type="text/javascript" src="{{ mpld3_url }}"></script>
 {% endif %}
 
@@ -60,9 +61,10 @@ if(typeof(window.mpld3) !== "undefined" && window.mpld3._mpld3IsLoaded){
             mpld3.draw_figure({{ figid }}, {{ figure_json }});
     }(mpld3);
 }else{
-  require.config({paths: {d3: "{{ d3_url[:-3] }}"}});
-  require(["d3"], function(d3){
+  require.config({paths: {d3: "{{ d3_url[:-3] }}", d3xyzoom: "{{ d3xyzoom_url[:-3] }}"}});
+  require(["d3", "d3xyzoom"], function(d3, d3xyzoom){
     window.d3 = d3;
+    window.d3xyzoom = d3xyzoom;
     $.getScript("{{ mpld3_url }}", function(){
        {{ extra_js }}
        mpld3.draw_figure({{ figid }}, {{ figure_json }});
@@ -101,9 +103,10 @@ if(typeof(mpld3) !== "undefined" && mpld3._mpld3IsLoaded){
    }(mpld3);
 }else if(typeof define === "function" && define.amd){
    // require.js is available: use it to load d3/mpld3
-   require.config({paths: {d3: "{{ d3_url[:-3] }}"}});
-   require(["d3"], function(d3){
+   require.config({paths: {d3: "{{ d3_url[:-3] }}", d3xyzoom: "{{ d3xyzoom_url[:-3] }}"}});
+   require(["d3", "d3xyzoom"], function(d3, d3xyzoom){
       window.d3 = d3;
+      window.d3xyzoom = d3xyzoom;
       mpld3_load_lib("{{ mpld3_url }}", function(){
          {{ extra_js }}
          mpld3.draw_figure({{ figid }}, {{ figure_json }});
@@ -112,11 +115,13 @@ if(typeof(mpld3) !== "undefined" && mpld3._mpld3IsLoaded){
 }else{
     // require.js not available: dynamically load d3 & mpld3
     mpld3_load_lib("{{ d3_url }}", function(){
+      mpld3_load_lib("{{ d3xyzoom_url }}", function(){
          mpld3_load_lib("{{ mpld3_url }}", function(){
                  {{ extra_js }}
                  mpld3.draw_figure({{ figid }}, {{ figure_json }});
             })
-         });
+         })
+    });
 }
 </script>
 """)
@@ -174,7 +179,7 @@ def fig_to_dict(fig, **kwargs):
     return figure_dict
 
 
-def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
+def fig_to_html(fig, d3_url=None, d3xyzoom_url=None, mpld3_url=None, no_extras=False,
                 template_type="general", figid=None, use_http=False, include_libraries=True, **kwargs):
     """Output html representation of the figure
 
@@ -184,6 +189,9 @@ def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
         The figure to display
     d3_url : string (optional)
         The URL of the d3 library.  If not specified, a standard web path
+        will be used.
+    d3xyzoom_url : string (optional)
+        The URL of the d3-xyzoom library.  If not specified, a standard web path
         will be used.
     mpld3_url : string (optional)
         The URL of the mpld3 library.  If not specified, a standard web path
@@ -235,10 +243,12 @@ def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
 
     # TODO: allow fig to be a list of figures?
     d3_url = d3_url or urls.D3_URL
+    d3xyzoom_url = d3xyzoom_url or urls.D3XYZOOM_URL
     mpld3_url = mpld3_url or urls.MPLD3_URL
 
     if use_http:
         d3_url = d3_url.replace('https://', 'http://')
+        d3xyzoom_url = d3xyzoom_url.replace('https://', 'http://')
         mpld3_url = mpld3_url.replace('https://', 'http://')
 
     if figid is None:
@@ -257,6 +267,7 @@ def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
 
     return template.render(figid=json.dumps(figid),
                            d3_url=d3_url,
+                           d3xyzoom_url=d3xyzoom_url,
                            mpld3_url=mpld3_url,
                            figure_json=json.dumps(figure_json, cls=NumpyEncoder),
                            extra_css=extra_css,
@@ -304,10 +315,10 @@ def display(fig=None, closefig=True, local=False, **kwargs):
     import matplotlib.pyplot as plt
 
     if local:
-        if 'mpld3_url' in kwargs or 'd3_url' in kwargs:
+        if 'mpld3_url' in kwargs or 'd3_url' in kwargs or 'd3xyzoom_url' in kwargs:
             warnings.warn(
-                "display: specified urls are ignored when local=True")
-        kwargs['d3_url'], kwargs['mpld3_url'] = write_ipynb_local_js()
+                "display: specified urls are ignored when local=true")
+        kwargs['d3_url'], kwargs['d3xyzoom_url'], kwargs['mpld3_url'] = write_ipynb_local_js()
 
     if fig is None:
         fig = plt.gcf()
@@ -354,9 +365,12 @@ def show(fig=None, ip='127.0.0.1', port=8888, n_retries=50,
     """
     if local:
         kwargs['mpld3_url'] = '/mpld3.js'
+        kwargs['d3xyzoom_url'] = '/d3xyzoom.js'
         kwargs['d3_url'] = '/d3.js'
         files = {'/mpld3.js': ["text/javascript",
                                open(urls.MPLD3_LOCAL, 'r').read()],
+                 '/d3xyzoom.js': ["text/javascript",
+                            open(urls.D3XYZOOM_LOCAL, 'r').read()],
                  '/d3.js': ["text/javascript",
                             open(urls.D3_LOCAL, 'r').read()]}
     else:
@@ -410,10 +424,10 @@ def enable_notebook(local=False, **kwargs):
         raise ImportError('This feature requires IPython 1.0+ and Matplotlib')
 
     if local:
-        if 'mpld3_url' in kwargs or 'd3_url' in kwargs:
+        if 'mpld3_url' in kwargs or 'd3_url' in kwargs or 'd3xyzoom_url' in kwargs:
             warnings.warn(
-                "enable_notebook: specified urls are ignored when local=True")
-        kwargs['d3_url'], kwargs['mpld3_url'] = write_ipynb_local_js()
+                "display: specified urls are ignored when local=true")
+        kwargs['d3_url'], kwargs['d3xyzoom_url'], kwargs['mpld3_url'] = write_ipynb_local_js()
 
     ip = get_ipython()
     formatter = ip.display_formatter.formatters['text/html']

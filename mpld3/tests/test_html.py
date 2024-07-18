@@ -13,17 +13,20 @@ def test_html():
             '--ok', alpha=0.3, zorder=10, lw=2)
 
     d3_url = "http://this.is.a.test/d3.js"
+    d3xyzoom_url = "http://this.is.a.test/d3xyzoom.js"
     mpld3_url = "http://this.is.a.test/mpld3.js"
 
     for template_type in ["simple", "notebook", "general"]:
         html1 = fig_to_html(fig, template_type=template_type)
-        html2 = fig_to_html(fig, d3_url, mpld3_url,
+        html2 = fig_to_html(fig, d3_url, d3xyzoom_url, mpld3_url,
                             template_type=template_type)
 
         # use [:-3] to strip .js from the end (it's not used in require)
         assert urls.D3_URL[:-3] in html1
+        assert urls.D3XYZOOM_URL[:-3] in html1
         assert urls.MPLD3_URL[:-3] in html1
         assert d3_url[:-3] in html2
+        assert d3xyzoom_url[:-3] in html2
         assert mpld3_url[:-3] in html2
 
 def test_no_scripts_added():
@@ -33,4 +36,5 @@ def test_no_scripts_added():
     html = fig_to_html(fig, include_libraries=False)
 
     assert urls.D3_URL[:-3] not in html
+    assert urls.D3XYZOOM_URL[:-3] not in html
     assert urls.MPLD3_URL[:-3] not in html

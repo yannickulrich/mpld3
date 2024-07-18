@@ -35,6 +35,7 @@ TEMPLATE = """
 <html>
 <head>
 <script type="text/javascript" src={d3_url}></script>
+<script type="text/javascript" src={d3xyzoom_url}></script>
 <script type="text/javascript" src={mpld3_url}></script>
 <style type="text/css">
 .left_col {{
@@ -168,7 +169,7 @@ class ExecFile(object):
 def combine_testplots(wildcard='mpld3/test_plots/*.py',
                       outfile='_test_plots.html',
                       pngdir='_pngs',
-                      d3_url=None, mpld3_url=None):
+                      d3_url=None, d3xyzoom_url=None, mpld3_url=None):
     """Generate figures from the plots and save to an HTML file
 
     Parameters
@@ -178,7 +179,10 @@ def combine_testplots(wildcard='mpld3/test_plots/*.py',
     outfile : string
         the path at which the output HTML will be saved
     d3_url : string
-        the URL of the d3 library to use.  If not specified, a standard web
+        the url of the d3 library to use.  if not specified, a standard web
+        address will be used.
+    d3xyzoom_url : string
+        the url of the d3xyzoom library to use.  if not specified, a standard web
         address will be used.
     mpld3_url : string
         the URL of the mpld3 library to use.  If not specified, a standard web
@@ -214,6 +218,7 @@ def combine_testplots(wildcard='mpld3/test_plots/*.py',
         f.write(TEMPLATE.format(left_col="".join(left_col),
                                 right_col="".join(right_col),
                                 d3_url=json.dumps(d3_url),
+                                d3xyzoom_url=json.dumps(d3xyzoom_url),
                                 mpld3_url=json.dumps(mpld3_url),
                                 js_commands="".join(js_commands),
                                 extra_css="".join(extra_css)))
@@ -226,6 +231,9 @@ def run_main():
     parser.add_argument("files", nargs='*', type=str)
     parser.add_argument("-d", "--d3-url",
                         help="location of d3 library",
+                        type=str, default=None)
+    parser.add_argument("-dz", "--d3xyzoom-url",
+                        help="location of d3xyzoom library",
                         type=str, default=None)
     parser.add_argument("-m", "--mpld3-url",
                         help="location of the mpld3 library",
@@ -245,11 +253,14 @@ def run_main():
 
     if args.d3_url is None:
         args.d3_url = urls.D3_URL
+    if args.d3xyzoom_url is None:
+        args.d3xyzoom_url = urls.D3XYZOOM_URL
     if args.mpld3_url is None:
         args.mpld3_url = urls.MPLD3_URL
 
     if args.local:
         args.d3_url = urls.D3_LOCAL
+        args.d3xyzoom_url = urls.D3XYZOOM_LOCAL
         if args.minjs:
             args.mpld3_url = urls.MPLD3MIN_LOCAL
         else:
@@ -259,11 +270,13 @@ def run_main():
             args.mpld3_url = urls.MPLD3MIN_URL
 
     print("d3 url: {0}".format(args.d3_url))
+    print("d3xyzoom url: {0}".format(args.d3xyzoom_url))
     print("mpld3 url: {0}".format(args.mpld3_url))
 
     combine_testplots(wildcard=wildcard,
                       outfile=args.output,
                       d3_url=args.d3_url,
+                      d3xyzoom_url=args.d3xyzoom_url,
                       mpld3_url=args.mpld3_url)
     return args.output, args.nolaunch
 
